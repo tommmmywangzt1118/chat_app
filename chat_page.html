@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewpoint"
+      content="width=device-width,initial-scale=1">
+  <style>
+  body {
+    font-family: Arial, sans-serif;
+    background-image: url(bg.jpeg);
+    background-attachment: fixed;
+    background-repeat: repeat;
+    background-size: cover;
+  }
+
+  footer{
+    height: 40px;
+    line-height: 40px;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    background: #333;
+    color: #fff;
+    font-family: Arial;
+    font-size: 12px;
+    letter-spacing: 1px;
+    opacity: 1;
+  }
+  #status-box {
+    height: 100px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #fff;
+    box-shadow: 2px 2px 5px #999;
+    margin-bottom: 20px;
+  }
+
+  #chat-box {
+    height: 300px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #fff;
+    box-shadow: 2px 2px 5px #999;
+    margin-bottom: 20px;
+  }
+
+  #message-input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+  }
+
+  #send-button {
+    width: 100%;
+    padding: 5px;
+    margin-top: 10px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+
+  #status {
+    margin-top: 10px;
+  }
+
+  #username-modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+
+  #username-modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+  }
+
+  #username-input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+  }
+
+  #set-username-button {
+    width: 100%;
+    padding: 5px;
+    margin-top: 10px;
+    background-color: #4CAF50;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+
+  .status {
+    font-style: italic;
+  }
+
+  #user-box {
+    height: 200px;
+    overflow-y: scroll;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-shadow: 2px 2px 5px #999;
+    margin-bottom: 20px;
+    background-color: #fff;
+  }
+
+  .user {
+    margin-bottom: 5px;
+  }
+
+  .typing {
+    color: #aaa;
+  }
+  </style>
+  
+  <title>chat_page</title>
+  <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+  <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <h1 style="margin-bottom: 0;position: relative;text-align: center;font-family: 'Comic Sans MS',cursive;color: #fff;">Chat</h1>
+  <nav>
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="/">Introduction</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="about_page.html">About</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="chat_page.html">Chat</a>
+        </li>
+    </ul>
+</nav>
+  <h3 style="color:#fff;font-family: 'Comic Sans MS',cursive;">Status</h3>
+  <div id="status-box"></div>
+  <h3 style="color:#fff;font-family: 'Comic Sans MS',cursive;">Messages</h3>
+  <div id="chat-box"></div>
+  <input type="text" id="message-input" placeholder="Enter your message...">
+  <button id="send-button">Send</button>
+  <div id="status"></div>
+  <h3 style="color:#fff;font-family: 'Comic Sans MS',cursive;">Users</h3>
+  <div id="user-box"></div>
+
+  <div id="username-modal">
+    <div id="username-modal-content">
+      <h2>Please enter your user name</h2>
+      <input type="text" id="username-input" placeholder="Enter your user name...">
+      <button id="set-username-button">Submit</button>
+    </div>
+  </div>
+  <footer>CopyRight&copy; tommmmywangzt2023</footer>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io();
+    var statusBox = document.getElementById("status-box");
+    var chatBox = document.getElementById("chat-box");
+    var messageInput = document.getElementById("message-input");
+    var sendButton = document.getElementById("send-button");
+    var status = document.getElementById("status");
+    var userBox = document.getElementById("user-box");
+    var username;
+
+    function setUsername() {
+      var name = document.getElementById("username-input").value.trim();
+      if (name) {
+        username = name;
+        socket.emit("set username", username);
+        document.getElementById("username-modal").style.display = "none";
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+      } else {
+        alert("User name can not be empty!");
+      }
+    }
+
+    document.getElementById("set-username-button").onclick = setUsername;
+
+    messageInput.disabled = true;
+    sendButton.disabled = true;
+
+    
+    socket.on("status", function(data) {
+      statusBox.innerHTML += "<p>" + data + "</p>";
+      statusBox.scrollTop = statusBox.scrollHeight;
+    });
+
+    socket.on("chat message", function(data) {
+      chatBox.innerHTML += "<p><strong>" + data.username + "：</strong>" + data.message + "</p>";
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    socket.on("user list", function(data) {
+      userBox.innerHTML = "";
+      for (var i = 0; i < data.length; i++) {
+        var user = data[i];
+        var userDiv = document.createElement("div");
+        userDiv.classList.add("user");
+        userDiv.innerText = user.username;
+        if (user.typing) {
+          var typingSpan = document.createElement("span");
+          typingSpan.classList.add("typing");
+          typingSpan.innerText = " Typing...";
+          userDiv.appendChild(typingSpan);
+        }
+        userBox.appendChild(userDiv);
+      }
+    });
+
+    
+    messageInput.addEventListener("keyup", function(event) {
+      if (event.keyCode === 13) {
+        sendButton.click();
+      }
+    });
+
+    
+    sendButton.onclick = function() {
+      var message = messageInput.value.trim();
+      if (message) {
+        socket.emit("chat message", message);
+        messageInput.value = "";
+      }
+    };
+
+    
+    if (!username) {
+      document.getElementById("username-modal").style.display = "block";
+    }
+
+    
+    messageInput.addEventListener("input", function(event) {
+      if (event.target.value) {
+        socket.emit("user typing", true);
+        typingSpan.innerText = " Typing...";
+      } else {
+        socket.emit("user typing", false);
+        typingSpan.innerText = " Online";
+      }
+    });
+  </script>
+</body>
+</html>
